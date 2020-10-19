@@ -1,0 +1,102 @@
+---
+title: "Marital Status Analysis Using Logistic Regression Model"
+author: "Jingyao Wang, Zhen Xia, Ruolan Zhang"
+date: "October 19th 2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Data
+```{r}
+library(tidyverse)
+library(survey)
+gss = read.csv("gss.csv",header = TRUE)
+```
+
+```{r}
+data <- 
+  gss %>% 
+  select(feelings_life,age, age_first_child,total_children,sex,year_arrived_canada,marital_status,education,hh_size,hh_type,self_rated_health,self_rated_mental_health,income_family,full_part_time_work,is_male)
+
+summary(data)
+```
+
+```{r}
+data <- 
+  gss %>% 
+  select(feelings_life,age, age_first_child,total_children,sex,marital_status,education,hh_size,hh_type,self_rated_health,self_rated_mental_health,income_family,is_male)
+
+summary(data)
+```
+
+```{r}
+data <- na.omit(data)
+str(data)
+```
+
+```{r}
+summary(data$marital_status)
+```
+
+```{r}
+data <- 
+  data %>% 
+  mutate(marry = marital_status  %in% c("Living common-law","Married") )
+summary(data$marry)
+```
+
+
+## Model
+
+
+```{r}
+N=20602
+n=length(data$marry)
+fpc.srs = rep(N, n)
+example.design.srs <- svydesign(id=~1, data=data, fpc=fpc.srs)
+svyglm.srs.logit <- svyglm(marry ~ age + sex + income_family + total_children + feelings_life + education, example.design.srs, family="binomial")
+summary(svyglm.srs.logit)
+mode(data$sex)
+```
+
+
+$$log(\frac{p}{1-p}) = \beta_0 + \beta_1 x_1 + \beta_2 x_2 + \beta_3 x_3 + \beta_4 x_4 + \beta_5 x_5 + \beta_6 x_6 + \beta_7 x_7 + \beta_8 x_8 + \beta_9 x_9 + \beta_{10} x_{10} + \beta_{11} x_{11} + \beta_{12} x_{12} + \beta_{13} x_{13}$$
+
+
+## Results
+
+```{r}
+library(gridExtra)
+
+marraige_1 <- data %>%
+  group_by(marital_status) %>%
+  summarise(counts = n())
+
+marraige_2 <- data %>%
+  group_by(marry) %>%
+  summarise(counts = n())
+
+plot_1 <- ggplot(marraige_1,aes(x=marital_status, y=counts))+
+  geom_bar(fill = "grey", stat = "identity") +
+  geom_text(aes(label = counts)) + 
+  labs(title = "Barplot for marital_status") +
+  theme() +
+  coord_flip()
+  
+plot_2 <- ggplot(marraige_2,aes(x=marry, y=counts))+
+  geom_bar(fill = "grey", stat = "identity") +
+  geom_text(aes(label = counts)) + 
+  labs(title = "Barplot for marriage") +
+  theme() +
+  coord_flip()
+plot_1
+plot_2
+```
+
+
+
+
+
